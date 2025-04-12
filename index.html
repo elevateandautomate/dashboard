@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agency Performance Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .sidebar {
+            transition: all 0.3s ease;
+        }
+        .sidebar.collapsed {
+            width: 70px;
+            overflow: hidden;
+        }
+        .sidebar.collapsed .nav-text {
+            display: none;
+        }
+        .sidebar.collapsed .logo-text {
+            display: none;
+        }
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: white;
+        }
+        .pipeline-stage {
+            min-height: 400px;
+        }
+        .lead-card {
+            cursor: grab;
+        }
+        .lead-card:active {
+            cursor: grabbing;
+        }
+        .health-score-excellent {
+            background-color: #10B981;
+        }
+        .health-score-good {
+            background-color: #3B82F6;
+        }
+        .health-score-warning {
+            background-color: #F59E0B;
+        }
+        .health-score-critical {
+            background-color: #EF4444;
+        }
+        .status-pending {
+            background-color: #F59E0B;
+        }
+        .status-declined {
+            background-color: #EF4444;
+        }
+        .status-approved {
+            background-color: #10B981;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Auth Container (shown by default) -->
+    <div id="auth-container" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-700 p-4">
+        <div class="w-full max-w-md bg-white rounded-lg shadow-lg overflow-hidden">
+            <!-- Login Form -->
+            <div id="login-form" class="p-8">
+                <div class="text-center mb-8">
+                    <img src="https://via.placeholder.com/150x50?text=Agency+Logo" alt="Agency Logo" class="h-12 mx-auto mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Welcome Back</h2>
+                    <p class="text-gray-600">Sign in to your dashboard</p>
+                </div>
+                <form id="loginForm" class="space-y-6">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="email" name="email" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="admin@admin.com">
+                        <div id="email-error" class="text-red-500 text-xs mt-1 hidden">Please enter a valid email</div>
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="password" name="password" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Hello123!!">
+                        <div id="password-error" class="text-red-500 text-xs mt-1 hidden">Password is required</div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input id="remember-me" name="remember-me" type="checkbox" 
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="remember-me" class="ml-2 block text-sm text-gray-700">Remember me</label>
+                        </div>
+                        <div>
+                            <a href="#" id="forgot-password-link" class="text-sm text-blue-600 hover:text-blue-500">Forgot password?</a>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" 
+                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Sign in
+                        </button>
+                    </div>
+                </form>
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">
+                        Don't have an account? 
+                        <a href="#" id="signup-link" class="text-blue-600 hover:text-blue-500">Sign up</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Signup Form (hidden by default) -->
+            <div id="signup-form" class="p-8 hidden">
+                <div class="text-center mb-8">
+                    <img src="https://via.placeholder.com/150x50?text=Agency+Logo" alt="Agency Logo" class="h-12 mx-auto mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Create Account</h2>
+                    <p class="text-gray-600">Get started with your dashboard</p>
+                </div>
+                <form id="signupForm" class="space-y-6">
+                    <div>
+                        <label for="signup-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="signup-email" name="email" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="your@email.com">
+                        <div id="signup-email-error" class="text-red-500 text-xs mt-1 hidden">Please enter a valid email</div>
+                    </div>
+                    <div>
+                        <label for="signup-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="signup-password" name="password" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="••••••••">
+                        <div id="signup-password-error" class="text-red-500 text-xs mt-1 hidden">Password must be at least 8 characters</div>
+                    </div>
+                    <div>
+                        <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                        <input type="password" id="confirm-password" name="confirm-password" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="••••••••">
+                        <div id="confirm-password-error" class="text-red-500 text-xs mt-1 hidden">Passwords don't match</div>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="terms" name="terms" type="checkbox" required
+                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="terms" class="ml-2 block text-sm text-gray-700">
+                            I agree to the <a href="#" class="text-blue-600 hover:text-blue-500">Terms of Service</a>
+                        </label>
+                    </div>
+                    <div>
+                        <button type="submit" 
+                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Create Account
+                        </button>
+                    </div>
+                </form>
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">
+                        Already have an account? 
+                        <a href="#" id="login-link" class="text-blue-600 hover:text-blue-500">Sign in</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Forgot Password Form (hidden by default) -->
+            <div id="forgot-password-form" class="p-8 hidden">
+                <div class="text-center mb-8">
+                    <img src="https://via.placeholder.com/150x50?text=Agency+Logo" alt="Agency Logo" class="h-12 mx-auto mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Reset Password</h2>
+                    <p class="text-gray-600">Enter your email to receive a reset link</p>
+                </div>
+                <form id="forgotPasswordForm" class="space-y-6">
+                    <div>
+                        <label for="reset-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="reset-email" name="email" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="your@email.com">
+                        <div id="reset-email-error" class="text-red-500 text-xs mt-1 hidden">Please enter a valid email</div>
+                    </div>
+                    <div>
+                        <button type="submit" 
+                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Send Reset Link
+                        </button>
+                    </div>
+                </form>
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">
+                        Remember your password? 
+                        <a href="#" id="back-to-login-link" class="text-blue-600 hover:text-blue-500">Sign in</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Container (hidden by default) -->
+    <div id="dashboard-container" class="hidden min-h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar fixed inset-y-0 left-0 bg-white shadow-lg w-64 z-20">
+            <div class="flex items-center justify-between p-4 border-b">
+                <div class="flex items-center">
+                    <img src="https://via.placeholder.com/40x40?text=Logo" alt="Logo" class="h-8 w-8 rounded">
+                    <span class="logo-text ml-2 text-xl font-bold text-gray-800">AgencyDash</span>
+                </div>
+                <button id="sidebar-toggle" class="text-gray-500 focus:outline-none lg:hidden">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <div class="flex items-center mb-6">
+                    <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <span class="text-blue-600 font-medium">AD</span>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-800">Admin User</p>
+                        <p class="text-xs text-gray-500">admin@admin.com</p>
+                    </div>
+                </div>
+                <nav>
+                    <ul class="space-y-2">
+                        <li>
+                            <a href="#" id="dashboard-overview-link" class="flex items-center p-2 text-sm font-medium rounded-md text-white bg-blue-600">
+                                <i class="fas fa-tachometer-alt mr-3"></i>
+                                <span class="nav-text">Dashboard Overview</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" id="client-tracking-link" class="flex items-center p-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100">
+                                <i class="fas fa-users mr-3"></i>
+                                <span class="nav-text">Client Side Tracking</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" id="agency-tracking-link" class="flex items-center p-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100">
+                                <i class="fas fa-chart-line mr-3"></i>
+                                <span class="nav-text">Agency Side Tracking</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" id="ad-manager-link" class="flex items-center p-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100">
+                                <i class="fas fa-ad mr-3"></i>
+                                <span class="nav-text">Ad Manager</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" id="reports-link" class="flex items-center p-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100">
+                                <i class="fas fa-file-export mr-3"></i>
+                                <span class="nav-text">Reports & Exports</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t">
+                <button id="logout-btn" class="flex items-center w-full p-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100">
+                    <i class="fas fa-sign-out-alt mr-3"></i>
+                    <span class="nav-text">Logout</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="ml-0 lg:ml-64 transition-all duration-300">
+            <!-- Top Navigation -->
+            <header class="sticky-header bg-white shadow-sm z-10">
+                <div class="flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <button id="mobile-sidebar-toggle" class="text-gray-500 focus:outline-none lg:hidden mr-4">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <h1 id="page-title" class="text-xl font-semibold text-gray-800">Dashboard Overview</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <button id="notifications-btn" class="p-1 rounded-full text-gray-500 hover:text-gray-700 focus:outline-none">
+                                <i class="fas fa-bell"></i>
+                                <span class="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <button id="date-filter-btn" class="flex items-center space-x-1 px-3 py-1 border rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                <span>Today</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div id="date-filter-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20">
+                                <div class="py-1">
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Today</a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Yesterday</a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Last 7 Days</a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">This Month</a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Custom Range</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <main class="p-4">
+                <!-- Dashboard Overview (shown by default) -->
+                <div id="dashboard-overview">
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Leads Today</p>
+                                    <p class="text-2xl font-bold text-gray-800">142</p>
+                                </div>
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                                    <i class="fas fa-user-plus"></i>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="text-xs font-medium text-green-500">+12% from yesterday</span>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Total Appointments</p>
+                                    <p class="text-2xl font-bold text-gray-800">87</p>
+                                </div>
+                                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="text-xs font-medium text-green-500">+8% from yesterday</span>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Show Rate</p>
+                                    <p class="text-2xl font-bold text-gray-800">72%</p>
+                                </div>
+                                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="text-xs font-medium text-red-500">-3% from yesterday</span>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Avg Response Time</p>
+                                    <p class="text-2xl font-bold text-gray-800">2.4m</p>
+                                </div>
+                                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                                    <i class="fas fa-stopwatch"></i>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="text-xs font-medium text-green-500">-0.7m from yesterday</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-800">Leads Trend</h3>
+                                <div class="flex space-x-2">
+                                    <button class="px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded">Daily</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">Weekly</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">Monthly</button>
+                                </div>
+                            </div>
+                            <div class="h-64">
+                                <canvas id="leadsChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-800">Appointment Status</h3>
+                                <div class="flex space-x-2">
+                                    <button class="px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded">Daily</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">Weekly</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">Monthly</button>
+                                </div>
+                            </div>
+                            <div class="h-64">
+                                <canvas id="appointmentsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="bg-white p-4 rounded-lg shadow mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-gray-800">Recent Activity</h3>
+                            <a href="#" class="text-sm text-blue-600 hover:text-blue-500">View All</a>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                    <i class="fas fa-check text-green-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-800">New appointment confirmed</p>
+                                    <p class="text-sm text-gray-500">Sarah Johnson - Lash Extensions - Tomorrow 2:30 PM</p>
+                                    <p class="text-xs text-gray-400 mt-1">10 minutes ago</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <i class="fas fa-user-plus text-blue-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-800">New lead captured</p>
+                                    <p class="text-sm text-gray-500">Michael Brown - Brow Service - From Instagram Ads</p>
+                                    <p class="text-xs text-gray-400 mt-1">25 minutes ago</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                                    <i class="fas fa-exclamation text-yellow-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-800">Appointment no-show</p>
+                                    <p class="text-sm text-gray-500">Jessica Smith - Lash Fill - Today 11:00 AM</p>
+                                    <p class="text-xs text-gray-400 mt-1">1 hour ago</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Client Side Tracking (hidden by default) -->
+                <div id="client-tracking" class="hidden">
+                    <!-- Filters -->
+                    <div class="bg-white p-4 rounded-lg shadow mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                                <select class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option>All Brands</option>
+                                    <option>LashConnector</option>
+                                    <option>BrowConnector</option>
+                                    <option>NailConnector</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Subaccount</label>
+                                <select class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option>All Subaccounts</option>
+                                    <option>Lash Studio NYC</option>
+                                    <option>Brow Bar Chicago</option>
+                                    <option>Nail Lounge LA</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+                                <select class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option>Today</option>
+                                    <option>Yesterday</option>
+                                    <option>Last 7 Days</option>
+                                    <option>This Month</option>
+                                    <option>Custom</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Health Score</label>
+                                <select class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option>All Scores</option>
+                                    <option>Excellent (80-100%)</option>
+                                    <option>Good (60-79%)</option>
+                                    <option>Warning (40-59%)</option>
+                                    <option>Critical (0-39%)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-between items-center">
+                            <div class="relative w-full max-w-md">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                                <input type="text" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Search subaccounts...">
+                            </div>
+                            <button class="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <i class="fas fa-filter mr-2"></i> Apply Filters
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Subaccounts Table -->
+                    <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subaccount</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leads</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Confirmed</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unconfirmed</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shows</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No-Shows</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response Time</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPL</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPA</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROAS</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ad Status</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Health Score</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-10 w-10">
+                                                    <img class="h-10 w-10 rounded-full" src="https://via.placeholder.com/40x40?text=LS" alt="">
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900">Lash Studio NYC</div>
+                                                    <div class="text-sm text-gray-500">LashConnector</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">42</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">28</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">14</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">22</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">6</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">1.8m</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">$12.50</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">$38.75</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-green-600">4.2x</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2.5">
+                                                    <div class="bg-green-600 h-2.5 rounded-full" style="width: 85%"></div>
+                                                </div>
+                                                <span class="ml-2 text-sm font-medium text-gray-700">85%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2 minutes ago</td>
+                                    </tr>
+                                    <!-- More rows... -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                            <div class="flex-1 flex justify-between sm:hidden">
+                                <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</a>
+                                <a href="#" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</a>
+                            </div>
+                            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-700">
+                                        Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium">47</span> results
+                                    </p>
+                                </div>
+                                <div>
+                                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                        <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                            <span class="sr-only">Previous</span>
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                        <a href="#" aria-current="page" class="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">1</a>
+                                        <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">2</a>
+                                        <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">3</a>
+                                        <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                            <span class="sr-only">Next</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Segments -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- Top Performing -->
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-800">Top Performing Subaccounts</h3>
+                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Health Score > 80%</span>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex items-center p-3 border border-green-100 rounded-lg bg-green-50">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                        <span class="text-green-600 font-medium">1</span>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-800">Lash Studio NYC</p>
+                                        <div class="flex items-center mt-1">
+                                            <span class="text-xs font-medium text-green-600 mr-3">ROAS: 4.2x</span>
+                                            <span class="text-xs font-medium text-green-600 mr-3">Show Rate: 78%</span>
+                                            <span class="text-xs font-medium text-green-600">CPL: $12.50</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- More top performers... -->
+                            </div>
+                        </div>
+
+                        <!-- Underperforming -->
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-800">Underperforming Subaccounts</h3>
+                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Health Score < 50%</span>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex items-center p-3 border border-red-100 rounded-lg bg-red-50">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                                        <span class="text-red-600 font-medium">1</span>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-800">Brow Bar Chicago</p>
+                                        <div class="flex items-center mt-1">
+                                            <span class="text-xs font-medium text-red-600 mr-3">ROAS: 1.2x</span>
+                                            <span class="text-xs font-medium text-red-600 mr-3">Show Rate: 42%</span>
+                                            <span class="text-xs font-medium text-red-600">CPL: $28.75</span>
+                                        </div>
+                                        <div class="mt-1">
+                                            <p class="text-xs text-gray-600">Primary issue: High no-show rate (58%)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- More underperformers... -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agency Side Tracking (hidden by default) -->
+                <div id="agency-tracking" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        <!-- Marketing Metrics -->
+                        <div class="bg-white p-4 rounded-lg shadow col-span-1">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-800">Marketing Metrics</h3>
+                                <button class="text-sm text-blue-600 hover:text-blue-500">View Details</button>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Leads by Source</p>
+                                    <div class="h-40 mt-2">
+                                        <canvas id="leadsSourceChart"></canvas>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500">Quiz Completions</p>
+                                        <p class="text-xl font-bold text-gray-800">87</p>
+                                        <p class="text-xs text-gray-500">+12% from last week</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500">Conversion Rate</p>
+                                        <p class="text-xl font-bold text-gray-800">23%</p>
+                                        <p class="text-xs text-gray-500">+2% from last week</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sales & Revenue -->
+                        <div class="bg-white p-4 rounded-lg shadow col-span-1">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-800">Sales & Revenue</h3>
+                                <button class="text-sm text-blue-600 hover:text-blue-500">View Details</button>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500">Appointments Booked</p>
+                                        <p class="text-xl font-bold text-gray-800">142</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500">New Clients</p>
+                                        <p class="text-xl font-bold text-gray-800">87</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Close Rate</p>
+                                    <p class="text-xl font-bold text-gray-800">61%</p>
+                                    <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                        <div class="bg-green-600 h-2 rounded-full" style="width: 61%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">MRR</p>
+                                    <p class="text-xl font-bold text-gray-800">$24,850</p>
+                                    <p class="text-xs text-green-500">+$2,450 from last month</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Asset & Brand Insights -->
+                        <div class="bg-white p-4 rounded-lg shadow col-span-1">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-800">Asset & Brand Insights</h3>
+                                <button class="text-sm text-blue-600 hover:text-blue-500">View Details</button>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">eBook Downloads</p>
+                                    <p class="text-xl font-bold text-gray-800">324</p>
+                                    <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: 65%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Free Resource Engagement</p>
+                                    <p class="text-xl font-bold text-gray-800">1,245</p>
+                                    <p class="text-xs text-green-500">+215 from last week</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Brand ROAS</p>
+                                    <div class="h-32 mt-2">
+                                        <canvas id="brandRoasChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- A2P Status Tracker -->
+                    <div class="bg-white p-4 rounded-lg shadow mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-gray-800">A2P Status Tracker</h3>
+                            <button class="text-sm text-blue-600 hover:text-blue-500">View All</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Pending -->
+                            <div class="border rounded-lg">
+                                <div class="bg-yellow-50 px-4 py-2 border-b">
+                                    <h4 class="text-sm font-medium text-yellow-800">Pending (3)</h4>
+                                </div>
+                                <div class="p-4 space-y-3">
+                                    <div class="flex items-start p-2 rounded-md bg-yellow-50">
+                                        <div class="flex-shrink-0 mt-1">
+                                            <span class="h-4 w-4 rounded-full bg-yellow-500 flex items-center justify-center">
+                                                <i class="fas fa-clock text-white text-xs"></i>
+                                            </span>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium text-gray-800">Lash Studio Miami</p>
+                                            <p class="text-xs text-gray-500">Submitted 2 days ago</p>
+                                        </div>
+                                    </div>
+                                    <!-- More pending items... -->
+                                </div>
+                            </div>
+
+                            <!-- Declined -->
+                            <div class="border rounded-lg">
+                                <div class="bg-red-50 px-4 py-2 border-b">
+                                    <h4 class="text-sm font-medium text-red-800">Declined (2)</h4>
+                                </div>
+                                <div class="p-4 space-y-3">
+                                    <div class="flex items-start p-2 rounded-md bg-red-50">
+                                        <div class="flex-shrink-0 mt-1">
+                                            <span class="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center">
+                                                <i class="fas fa-times text-white text-xs"></i>
+                                            </span>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium text-gray-800">Brow Bar Dallas</p>
+                                            <p class="text-xs text-gray-500">Needs resubmission</p>
+                                            <button class="mt-1 inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                                Resubmit
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- More declined items... -->
+                                </div>
+                            </div>
+
+                            <!-- Approved -->
+                            <div class="border rounded-lg">
+                                <div class="bg-green-50 px-4 py-2 border-b">
+                                    <h4 class="text-sm font-medium text-green-800">Approved (15)</h4>
+                                </div>
+                                <div class="p-4 space-y-3">
+                                    <div class="flex items-start p-2 rounded-md bg-green-50">
+                                        <div class="flex-shrink-0 mt-1">
+                                            <span class="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
+                                                <i class="fas fa-check text-white text-xs"></i>
+                                            </span>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium text-gray-800">Nail Lounge LA</p>
+                                            <p class="text-xs text-gray-500">Approved yesterday</p>
+                                        </div>
+                                    </div>
+                                    <!-- More approved items... -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sales Pipeline Builder -->
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-gray-800">Sales Pipeline Builder</h3>
+                            <div class="flex space-x-2">
+                                <button class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <i class="fas fa-plus mr-1"></i> Add Stage
+                                </button>
+                                <button class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <i class="fas fa-cog mr-1"></i> Configure
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <div id="pipeline-container" class="flex space-x-4 min-w-max pb-4">
+                                <!-- Lead In Stage -->
+                                <div class="pipeline-stage w-64 flex-shrink-0 bg-gray-50 rounded-lg p-2">
+                                    <div class="flex items-center justify-between p-2 bg-white rounded-md shadow-sm mb-2">
+                                        <h4 class="text-sm font-medium text-gray-800">Lead In (5)</h4>
+                                        <button class="text-gray-400 hover:text-gray-500">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                    </div>
+                                    <div id="lead-in-stage" class="space-y-2">
+                                        <!-- Lead Card -->
+                                        <div class="lead-card p-3 bg-white rounded-md shadow-sm border-l-4 border-blue-500">
+                                            <div class="flex justify-between items-start">
+                                                <div>
+                                                    <p class="text-sm font-medium text-gray-800">Sarah Johnson</p>
+                                                    <p class="text-xs text-gray-500">Lash Extensions</p>
+                                                </div>
+                                                <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">New</span>
+                                            </div>
+                                            <div class="mt-2 flex items-center text-xs text-gray-500">
+                                                <i class="fas fa-clock mr-1"></i>
+                                                <span>Today, 10:30 AM</span>
+                                            </div>
+                                            <div class="mt-2 flex items-center text-xs text-gray-500">
+                                                <i class="fas fa-user mr-1"></i>
+                                                <span>Assigned to: Jessica</span>
+                                            </div>
+                                        </div>
+                                        <!-- More lead cards... -->
+                                    </div>
+                                </div>
+
+                                <!-- Contacted Stage -->
+                                <div class="pipeline-stage w-64 flex-shrink-0 bg-gray-50 rounded-lg p-2">
+                                    <div class="flex items-center justify-between p-2 bg-white rounded-md shadow-sm mb-2">
+                                        <h4 class="text-sm font-medium text-gray-800">Contacted (3)</h4>
+                                        <button class="text-gray-400 hover:text-gray-500">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                    </div>
+                                    <div id="contacted-stage" class="space-y-2">
+                                        <!-- Lead Card -->
+                                        <div class="lead-card p-3 bg-white rounded-md shadow-sm border-l-4 border-yellow-500">
+                                            <div class="flex justify-between items-start">
+                                                <div>
+                                                    <p class="text-sm font-medium text-gray-800">Michael Brown</p>
+                                                    <p class="text-xs text-gray-500">Brow Service</p>
+                                                </div>
+                                                <span class="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">Follow Up</span>
+                                            </div>
+                                            <div class="mt-2 flex items-center text-xs text-gray-500">
+                                                <i class="fas fa-clock mr-1"></i>
+                                                <span>Yesterday, 2:15 PM</span>
+                                            </div>
+                                            <div class="mt-2 flex items-center text-xs text-gray-500">
+                                                <i class="fas fa-user mr-1"></i>
+                                                <span>Assigned to: Alex</span>
+                                            </div>
+                                        </div>
+                                        <!-- More lead cards... -->
+                                    </div>
+                                </div>
+
+                                <!-- Closed Stage -->
+                                <div class="pipeline-stage w-64 flex-shrink-0 bg-gray-50 rounded-lg p-2">
+                                    <div class="flex items-center justify-between p-2 bg-white rounded-md shadow-sm mb-2">
+                                        <h4 class="text-sm font-medium text-gray-800">Closed (8)</h4>
+                                        <button class="text-gray-400 hover:text-gray-500">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                    </div>
+                                    <div id="closed-stage" class="space-y-2">
+                                        <!-- Lead Card -->
+                                        <div class="lead-card p-3 bg-white rounded-md shadow-sm border-l-4 border-green-500">
+                                            <div class="flex justify-between items-start">
+                                                <div>
+                                                    <p class="text-sm font-medium text-gray-800">Emily Wilson</p>
+                                                    <p class="text-xs text-gray-500">Nail Services</p>
+                                                </div>
+                                                <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">Converted</span>
+                                            </div>
+                                            <div class="mt-2 flex items-center text-xs text-gray-500">
+                                                <i class="fas fa-clock mr-1"></i>
+                                                <span>2 days ago</span>
+                                            </div>
+                                            <div class="mt-2 flex items-center text-xs text-gray-500">
+                                                <i class="fas fa-user mr-1"></i>
+                                                <span>Assigned to: Sarah</span>
+                                            </div>
+                                        </div>
+                                        <!-- More lead cards... -->
+                                    </div>
+                                </div>
+
+                                <!-- Add New Stage -->
+                                <div class="pipeline-stage w-64 flex-shrink-0 bg-gray-100 rounded-lg p-2 flex items-center justify-center">
+                                    <button class="flex items-center text-gray-500 hover:text-gray-700">
+                                        <i class="fas fa-plus-circle mr-2"></i>
+                                        <span>Add Stage</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ad Manager (hidden by default) -->
+                <div id="ad-manager" class="hidden">
+                    <div class="bg-white p-4 rounded-lg shadow mb-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Ad Manager</h2>
+                        <p class="text-gray-600">Ad management features will be implemented here.</p>
+                    </div>
+                </div>
+
+                <!-- Reports & Exports (hidden by default) -->
+                <div id="reports" class="hidden">
+                    <div class="bg-white p-4 rounded-lg shadow mb-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Reports & Exports</h2>
+                        <p class="text-gray-600">Reporting and export features will be implemented here.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Authentication Logic
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form toggles
+            document.getElementById('signup-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('signup-form').classList.remove('hidden');
+                document.getElementById('forgot-password-form').classList.add('hidden');
+            });
+
+            document.getElementById('login-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('signup-form').classList.add('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('forgot-password-form').classList.add('hidden');
+            });
+
+            document.getElementById('forgot-password-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('signup-form').classList.add('hidden');
+                document.getElementById('forgot-password-form').classList.remove('hidden');
+            });
+
+            document.getElementById('back-to-login-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('forgot-password-form').classList.add('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+            });
+
+            // Form validation
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                // Simple validation
+                let isValid = true;
+                
+                if (!email || !email.includes('@')) {
+                    document.getElementById('email-error').classList.remove('hidden');
+                    isValid = false;
+                } else {
+                    document.getElementById('email-error').classList.add('hidden');
+                }
+                
+                if (!password) {
+                    document.getElementById('password-error').classList.remove('hidden');
+                    isValid = false;
+                } else {
+                    document.getElementById('password-error').classList.add('hidden');
+                }
+                
+                if (isValid) {
+                    // Default credentials check
+                    if (email === 'admin@admin.com' && password === 'Hello123!!') {
+                        // Hide auth container, show dashboard
+                        document.getElementById('auth-container').classList.add('hidden');
+                        document.getElementById('dashboard-container').classList.remove('hidden');
+                        
+                        // Initialize charts
+                        initCharts();
+                        
+                        // Initialize pipeline drag and drop
+                        initPipeline();
+                    } else {
+                        alert('Invalid credentials. Use admin@admin.com / Hello123!!');
+                    }
+                }
+            });
+
+            // Signup form validation
+            document.getElementById('signupForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                
+                // Simple validation
+                let isValid = true;
+                
+                if (!email || !email.includes('@')) {
+                    document.getElementById('signup-email-error').classList.remove('hidden');
+                    isValid = false;
+                } else {
+                    document.getElementById('signup-email-error').classList.add('hidden');
+                }
+                
+                if (!password || password.length < 8) {
+                    document.getElementById('signup-password-error').classList.remove('hidden');
+                    isValid = false;
+                } else {
+                    document.getElementById('signup-password-error').classList.add('hidden');
+                }
+                
+                if (password !== confirmPassword) {
+                    document.getElementById('confirm-password-error').classList.remove('hidden');
+                    isValid = false;
+                } else {
+                    document.getElementById('confirm-password-error').classList.add('hidden');
+                }
+                
+                if (isValid) {
+                    alert('Account created successfully! You can now login.');
+                    document.getElementById('signup-form').classList.add('hidden');
+                    document.getElementById('login-form').classList.remove('hidden');
+                }
+            });
+
+            // Forgot password form
+            document.getElementById('forgotPasswordForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('reset-email').value;
+                
+                if (!email || !email.includes('@')) {
+                    document.getElementById('reset-email-error').classList.remove('hidden');
+                } else {
+                    document.getElementById('reset-email-error').classList.add('hidden');
+                    alert('Password reset link sent to your email!');
+                    document.getElementById('forgot-password-form').classList.add('hidden');
+                    document.getElementById('login-form').classList.remove('hidden');
+                }
+            });
+
+            // Dashboard Sidebar Toggle
+            document.getElementById('sidebar-toggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.add('hidden');
+            });
+
+            document.getElementById('mobile-sidebar-toggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.remove('hidden');
+            });
+
+            // Logout
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                document.getElementById('dashboard-container').classList.add('hidden');
+                document.getElementById('auth-container').classList.remove('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('signup-form').classList.add('hidden');
+                document.getElementById('forgot-password-form').classList.add('hidden');
+            });
+
+            // Date Filter Dropdown
+            document.getElementById('date-filter-btn').addEventListener('click', function() {
+                document.getElementById('date-filter-dropdown').classList.toggle('hidden');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('#date-filter-btn') && !event.target.closest('#date-filter-dropdown')) {
+                    document.getElementById('date-filter-dropdown').classList.add('hidden');
+                }
+            });
+
+            // Navigation between dashboard sections
+            const navLinks = ['dashboard-overview', 'client-tracking', 'agency-tracking', 'ad-manager', 'reports'];
+            navLinks.forEach(link => {
+                document.getElementById(`${link}-link`).addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Hide all sections
+                    navLinks.forEach(l => {
+                        document.getElementById(l).classList.add('hidden');
+                    });
+                    
+                    // Show selected section
+                    document.getElementById(link).classList.remove('hidden');
+                    
+                    // Update page title
+                    document.getElementById('page-title').textContent = 
+                        link.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                    
+                    // Update active nav item styling
+                    document.querySelectorAll('#sidebar a').forEach(navItem => {
+                        navItem.classList.remove('text-white', 'bg-blue-600');
+                        navItem.classList.add('text-gray-600', 'hover:bg-gray-100');
+                    });
+                    
+                    this.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                    this.classList.add('text-white', 'bg-blue-600');
+                    
+                    // Reinitialize charts if needed
+                    if (link === 'dashboard-overview' || link === 'agency-tracking') {
+                        initCharts();
+                    }
+                    
+                    // Reinitialize pipeline if needed
+                    if (link === 'agency-tracking') {
+                        initPipeline();
+                    }
+                });
+            });
+        });
+
+        // Initialize Charts
+        function initCharts() {
+            // Leads Trend Chart
+            const leadsCtx = document.getElementById('leadsChart').getContext('2d');
+            const leadsChart = new Chart(leadsCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                    datasets: [{
+                        label: 'Leads',
+                        data: [120, 190, 170, 220, 210, 240, 260],
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Appointments Status Chart
+            const appointmentsCtx = document.getElementById('appointmentsChart').getContext('2d');
+            const appointmentsChart = new Chart(appointmentsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Scheduled', 'Confirmed', 'Showed', 'No-Shows'],
+                    datasets: [{
+                        label: 'Appointments',
+                        data: [120, 90, 65, 25],
+                        backgroundColor: [
+                            '#3B82F6',
+                            '#10B981',
+                            '#6366F1',
+                            '#EF4444'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Leads Source Chart (Agency Tracking)
+            if (document.getElementById('leadsSourceChart')) {
+                const leadsSourceCtx = document.getElementById('leadsSourceChart').getContext('2d');
+                const leadsSourceChart = new Chart(leadsSourceCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Facebook', 'Instagram', 'Google', 'Referral', 'Organic'],
+                        datasets: [{
+                            data: [35, 25, 20, 15, 5],
+                            backgroundColor: [
+                                '#3B82F6',
+                                '#8B5CF6',
+                                '#EF4444',
+                                '#10B981',
+                                '#F59E0B'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Brand ROAS Chart (Agency Tracking)
+            if (document.getElementById('brandRoasChart')) {
+                const brandRoasCtx = document.getElementById('brandRoasChart').getContext('2d');
+                const brandRoasChart = new Chart(brandRoasCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['LashConnector', 'BrowConnector', 'NailConnector'],
+                        datasets: [{
+                            label: 'ROAS',
+                            data: [4.2, 2.8, 3.5],
+                            backgroundColor: [
+                                '#6366F1',
+                                '#8B5CF6',
+                                '#EC4899'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Initialize Pipeline Drag and Drop
+        function initPipeline() {
+            const stages = ['lead-in-stage', 'contacted-stage', 'closed-stage'];
+            
+            stages.forEach(stageId => {
+                new Sortable(document.getElementById(stageId), {
+                    group: 'pipeline',
+                    animation: 150,
+                    ghostClass: 'bg-blue-50',
+                    onEnd: function(evt) {
+                        console.log('Moved item', evt.item.textContent, 'from', evt.from.id, 'to', evt.to.id);
+                    }
+                });
+            });
+        }
+    </script>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=elevateandautomate/login-working-dashboard" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
+</html>
